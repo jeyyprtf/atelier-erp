@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Art-gallery design tokens — Tailwind v4 CSS-first theme */
+@theme {
+  --color-bone: #fafaf7;
+  --color-canvas: #f3f1ea;
+  --color-ink: #1a1a1a;
+  --color-muted: #6b6862;
+  --color-hairline: #e6e3dc;
+  --color-clay: #b6452c;
+  --color-clay-soft: #f0e2db;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+/* dark palette — same token names, so every bg-bone/text-ink flips automatically */
+html.dark {
+  --color-bone: #15140f;
+  --color-canvas: #1e1c16;
+  --color-ink: #ecebe3;
+  --color-muted: #9c978c;
+  --color-hairline: #2c2922;
+  --color-clay: #cf6244;
+  --color-clay-soft: #3a261f;
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  background: var(--color-bone);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* thin, gallery-style scrollbar */
+* { scrollbar-width: thin; scrollbar-color: var(--color-hairline) transparent; }
