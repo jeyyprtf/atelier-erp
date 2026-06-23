@@ -37,24 +37,31 @@
 
 | Module | Who | What it does |
 |---|---|---|
-| **My Tasks** | Everyone | Your personal Kanban board. Drag tasks across stages: To Do → In Progress → Approval Pending → Done. |
+| **Dashboard** | Everyone | Team overview at a glance: your board breakdown, team progress snapshot, due-this-week list, recent activity. |
+| **My Tasks** | Everyone | Your personal Kanban board. Drag tasks across stages: To Do → In Progress → Approval Pending → Done. Time tracking & comments per task. |
 | **Team Progress** | Everyone | Every task across the team, grouped by stage. Filter per member. See everyone's progress at a glance. |
-| **Task Assignment** | Lead, C-Level | Create and edit tasks. Assign to one or more people. Set PIC, deadline, and override progress %. |
-| **Meeting Notes** | Everyone | Capture what was discussed. Title, date, summary, and full notes. Collaborative editing. |
+| **Task Assignment** | Lead, C-Level | Create and edit tasks. Assign to one or more people. Set PIC, deadline, override progress %, and export CSV. |
+| **Meeting Notes** | Everyone | Capture what was discussed. Title, date, summary, and full notes with markdown. |
 | **Resources** | Everyone | A link repository for shared documents, spreadsheets, PDFs — anything the team references. |
 | **Members** | C-Level | Promote or demote roles: Member → Lead → C-Level. |
-| **Profile** | Everyone | Edit your name, change password, switch Light/Dark/System theme, toggle English/Indonesian. |
+| **Profile** | Everyone | Edit your name, upload & crop profile photo, change password, switch Light/Dark/System theme, toggle English/Indonesian. |
 
 ### Features
 
 - 🎨 **Art-gallery design** — warm bone canvas, Fraunces + Inter fonts, smooth Framer Motion animations
 - 🌙 **Dark mode** — 3-way toggle (Light / Dark / System), zero flash on reload
 - 🌐 **Bilingual** — English and Bahasa Indonesia, persisted preference
-- 📱 **Responsive** — sidebar becomes a drawer on mobile, Kanban adapts to stacked columns
+- 📱 **Responsive + PWA** — sidebar becomes a drawer on mobile, Kanban stacks. Installable to home screen
 - 🔐 **Row-Level Security** — permissions enforced at the database level, not just the UI
-- ⚡ **Realtime** — drag a task and every teammate sees it move instantly
+- ⚡ **Realtime** — drag a task, add a comment, assign someone — and teammates see it live
 - 🔑 **Auth** — Email/password signup with verification, Google OAuth ready
-- 🖼️ **Avatar** — profile photo via Google OAuth, or initials fallback
+- 🖼️ **Avatar** — upload & crop profile photo (max 1MB), or initials fallback
+- 💬 **Task comments** — threaded discussion per task with markdown support
+- 🔔 **Notifications** — bell icon, realtime alerts on assignment, status change, and comments
+- ⏱️ **Time tracking** — log minutes per task, view total accumulated time
+- 📝 **Markdown** — bold, italic, links, headings, lists in descriptions, comments, and notes
+- 📥 **Export CSV** — one-click export all tasks from Assignment table
+- ⌨️ **Keyboard shortcuts** — `D` Dashboard, `T` Tasks, `E` Team, `A` Assign, `M` Meeting, `R` Resources, `P` Profile
 
 ### One-click deploy
 
@@ -160,20 +167,27 @@ Claude Code (or any Supabase-capable AI coding tool) will guide you step-by-step
 | Styling | Tailwind CSS v4 (CSS-first `@theme`) |
 | Animation | Framer Motion |
 | Drag & drop | @dnd-kit |
+| Image crop | react-image-crop |
 | Auth + DB | Supabase (hosted) |
 | Realtime | Supabase Channels (Postgres publication) |
 | Routing | React Router v7 |
 | Hosting | Vercel (zero-config) |
+| PWA | Service Worker + Web Manifest |
 
 ### Project structure
 
 ```
 src/
 ├── auth/           AuthProvider (session + profile + role)
-├── components/     Board, Layout, TaskCard, TaskModal, UI primitives
-├── lib/            supabase client, i18n, theme, data hooks
-└── pages/          Login, Signup, MyTasks, Team, Assign,
-                    Meetings, Resources, Members, Profile
+├── components/     Board, Layout, TaskCard, TaskModal, UI primitives,
+│                   Markdown, AvatarCropModal
+├── lib/            supabase client, i18n, theme, notifications,
+│                   useTasks, useProfiles, useShortcuts
+└── pages/          Dashboard, MyTasks, Team, Assign, Meetings,
+                    Resources, Members, Profile, Login, Signup
+public/
+├── sw.js           Service Worker (offline caching)
+└── manifest.json   PWA manifest
 setup/
 └── schema.sql      Complete Supabase schema (one file)
 ```
@@ -194,24 +208,31 @@ MIT. Use it, modify it, ship it.
 
 | Modul | Siapa | Fungsinya |
 |---|---|---|
-| **Tugasku** | Semua | Papan Kanban pribadi. Seret tugas antar tahap: To Do → In Progress → Approval Pending → Done. |
+| **Dasbor** | Semua | Ringkasan tim sekilas: papanmu, progres tim, deadline minggu ini, aktivitas terbaru. |
+| **Tugasku** | Semua | Papan Kanban pribadi. Seret tugas antar tahap: To Do → In Progress → Approval Pending → Done. Pencatatan waktu & komentar per tugas. |
 | **Progres Tim** | Semua | Semua tugas di tim, dikelompokkan per status. Filter per anggota. Lihat progres semua orang sekilas. |
-| **Penugasan** | Lead, C-Level | Buat dan edit tugas. Assign ke satu atau beberapa orang. Tentukan PIC, deadline, dan override progress %. |
-| **Catatan Rapat** | Semua | Catat hasil diskusi. Judul, tanggal, ringkasan, dan notes lengkap. Edit kolaboratif. |
+| **Penugasan** | Lead, C-Level | Buat dan edit tugas. Assign ke satu atau beberapa orang. PIC, deadline, progress override, dan export CSV. |
+| **Catatan Rapat** | Semua | Catat hasil diskusi. Judul, tanggal, ringkasan, dan notes lengkap dengan markdown. |
 | **Dokumen** | Semua | Repositori tautan untuk spreadsheet, dokumen, PDF — apa pun referensi tim. |
 | **Anggota** | C-Level | Promosikan atau turunkan peran: Anggota → Ketua → C-Level. |
-| **Profil** | Semua | Edit nama, ganti kata sandi, pilih tema Terang/Gelap/Sistem, ganti Bahasa Inggris/Indonesia. |
+| **Profil** | Semua | Edit nama, upload & crop foto profil, ganti kata sandi, pilih tema Terang/Gelap/Sistem, ganti Bahasa. |
 
 ### Fitur
 
 - 🎨 **Desain art-gallery** — kanvas bone hangat, font Fraunces + Inter, animasi Framer Motion yang mulus
 - 🌙 **Dark mode** — 3 pilihan (Terang / Gelap / Sistem), tanpa flash saat reload
 - 🌐 **Bilingual** — Inggris dan Bahasa Indonesia, pilihan tersimpan
-- 📱 **Responsif** — sidebar jadi drawer di mobile, Kanban adaptif kolom bertumpuk
+- 📱 **Responsif + PWA** — sidebar jadi drawer di mobile, Kanban adaptif. Bisa di-install ke home screen
 - 🔐 **Row-Level Security** — izin ditegakkan di level database, bukan cuma UI
-- ⚡ **Realtime** — seret tugas dan semua anggota tim melihatnya bergerak langsung
+- ⚡ **Realtime** — seret tugas, tambah komentar, assign anggota — dan tim melihatnya langsung
 - 🔑 **Auth** — Daftar dengan email/password + verifikasi, Google OAuth siap
-- 🖼️ **Avatar** — foto profil dari Google OAuth, atau inisial fallback
+- 🖼️ **Avatar** — upload & crop foto profil (max 1MB), atau inisial fallback
+- 💬 **Komentar tugas** — diskusi per tugas dengan dukungan markdown
+- 🔔 **Notifikasi** — ikon lonceng, alert realtime saat di-assign, status berubah, atau komentar baru
+- ⏱️ **Pencatatan waktu** — log menit per tugas, lihat total akumulasi
+- 📝 **Markdown** — bold, italic, link, heading, list di deskripsi, komentar, dan catatan
+- 📥 **Export CSV** — satu klik download semua tugas dari tabel Penugasan
+- ⌨️ **Shortcut keyboard** — `D` Dasbor, `T` Tugas, `E` Tim, `A` Assign, `M` Meeting, `R` Dokumen, `P` Profil
 
 ### Deploy sekali klik
 
