@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
+import { NotificationProvider } from './lib/notifications'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -16,7 +17,8 @@ import Profile from './pages/Profile'
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <NotificationProvider>
+        <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -31,6 +33,7 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </NotificationProvider>
     </AuthProvider>
   )
 }
