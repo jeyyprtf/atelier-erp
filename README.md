@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/jeyyprtf/atelier-erp/master/public/photo-juan.webp">
-    <img src="https://raw.githubusercontent.com/jeyyprtf/atelier-erp/master/public/photo-juan.webp" alt="Atelier" width="128" height="128" style="border-radius:24px">
+    <img src="https://raw.githubusercontent.com/jeyyprtf/atelier-erp/master/public/photo-juan.webp" alt="Atelier" width="128" style="border-radius:24px">
   </picture>
 </p>
 
