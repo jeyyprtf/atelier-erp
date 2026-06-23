@@ -1,10 +1,13 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { supabase } from './supabase'
-import { useAuth } from '../auth/AuthProvider'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { supabase } from './supabase'
+import { useAuth } from '../auth/AuthProvider'
 
-export function useNotifications() {
+const NotifCtx = createContext(null)
+export const useNotifications = () => useContext(NotifCtx)
+
+export function NotificationProvider({ children }) {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [unread, setUnread] = useState(0)
@@ -19,13 +22,12 @@ export function useNotifications() {
   useEffect(() => { loadRef.current = load }, [load])
   useEffect(() => { load() }, [load])
 
-  // realtime (stable ref to avoid re-subscribe loop)
   useEffect(() => {
     if (!user?.id) return
     const ch = supabase.channel('notif-rt')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `profile_id=eq.${user.id}` }, () => loadRef.current?.())
       .subscribe()
-    return () => { supabase.removeChannel(ch) }
+    return () => { supabase.removeChannel(ch).catch(() => {}) }
   }, [user?.id])
 
   const markRead = async (id) => {
@@ -40,7 +42,7 @@ export function useNotifications() {
     setUnread(0)
   }
 
-  return { items, unread, markRead, markAll }
+  return <NotifCtx.Provider value={{ items, unread, markRead, markAll }}>{children}</NotifCtx.Provider>
 }
 
 export function NotifBell() {
@@ -72,7 +74,7 @@ export function NotifBell() {
                   <p className="p-6 text-center text-sm text-muted">No notifications yet</p>
                 ) : items.map((n) => (
                   <button key={n.id}
-                    onClick={() => { markRead(n.id); if (n.link) nav(n.link); }}
+                    onClick={() => { markRead(n.id); if (n.link) nav(n.link) }}
                     className={`flex w-full gap-3 border-b border-hairline/50 px-4 py-3 text-left text-sm transition-colors hover:bg-canvas ${n.read ? 'opacity-60' : ''}`}>
                     <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${n.read ? 'bg-transparent' : 'bg-clay'}`} />
                     <span className={n.read ? '' : 'font-medium'}>{n.body}</span>
