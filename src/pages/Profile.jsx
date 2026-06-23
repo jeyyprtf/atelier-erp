@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 import { useTheme } from '../lib/theme'
 import { useT } from '../lib/i18n'
 import { supabase } from '../lib/supabase'
 import { Avatar, Button, Card, Field, Input, Spinner } from '../components/ui'
+import AvatarCropModal from '../components/AvatarCropModal'
 
 const ROLE_KEYS = { c_level: 'role.c_level', lead: 'role.lead', member: 'role.member' }
 const THEMES = [{ v: 'light', l: 'Light' }, { v: 'dark', l: 'Dark' }, { v: 'system', l: 'System' }]
@@ -27,6 +28,84 @@ export default function Profile() {
   const [pwBusy, setPwBusy] = useState(false)
   const [pwMsg, setPwMsg] = useState('')
 
+  // avatar
+  const [cropFile, setCropFile] = useState(null)
+  const [cropOpen, setCropOpen] = useState(false)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const [avatarMsg, setAvatarMsg] = useState('')
+  const fileRef = useRef(null)
+
+  function pickFile() { fileRef.current?.click() }
+
+  function onFile(e) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (f.size > 1048576) { setAvatarMsg('Max 1 MB'); return }
+    setAvatarMsg('')
+    const img = new Image()
+    img.onload = () => {
+      const ratio = img.width / img.height
+      if (Math.abs(ratio - 1) < 0.02) {
+        // nearly square — upload directly
+        uploadDirect(f)
+      } else {
+        setCropFile(f)
+        setCropOpen(true)
+      }
+      URL.revokeObjectURL(img.src)
+    }
+    img.src = URL.createObjectURL(f)
+    e.target.value = ''
+  }
+
+  async function uploadDirect(f) {
+    setAvatarBusy(true)
+    setAvatarMsg('')
+    const ext = f.name.split('.').pop() || 'webp'
+    const path = `${user.id}/avatar.${ext}`
+    // pony: delete old first so new URL busts cache
+    await supabase.storage.from('avatars').remove([`${user.id}/avatar.webp`, `${user.id}/avatar.png`, `${user.id}/avatar.jpg`])
+    const { error } = await supabase.storage.from('avatars').upload(path, f, { upsert: true })
+    setAvatarBusy(false)
+    if (error) { setAvatarMsg(error.message); return }
+    const { data: url } = supabase.storage.from('avatars').getPublicUrl(path)
+    await Promise.all([
+      supabase.from('profiles').update({ avatar_url: url.publicUrl }).eq('id', user.id),
+      supabase.auth.updateUser({ data: { avatar_url: url.publicUrl } }),
+    ])
+    setAvatarMsg(t('profile.saved'))
+    refreshProfile()
+  }
+
+  async function onCropSaved(blob) {
+    setAvatarBusy(true)
+    setAvatarMsg('')
+    const path = `${user.id}/avatar.webp`
+    await supabase.storage.from('avatars').remove([path])
+    const { error } = await supabase.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/webp' })
+    setAvatarBusy(false)
+    if (error) { setAvatarMsg(error.message); return }
+    const { data: url } = supabase.storage.from('avatars').getPublicUrl(path)
+    await Promise.all([
+      supabase.from('profiles').update({ avatar_url: url.publicUrl }).eq('id', user.id),
+      supabase.auth.updateUser({ data: { avatar_url: url.publicUrl } }),
+    ])
+    setAvatarMsg(t('profile.saved'))
+    refreshProfile()
+  }
+
+  async function removeAvatar() {
+    setAvatarBusy(true)
+    setAvatarMsg('')
+    await supabase.storage.from('avatars').remove([`${user.id}/avatar.webp`])
+    await Promise.all([
+      supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id),
+      supabase.auth.updateUser({ data: { avatar_url: null } }),
+    ])
+    setAvatarBusy(false)
+    refreshProfile()
+  }
+
   async function saveName(e) {
     e.preventDefault()
     setNameBusy(true)
@@ -43,7 +122,6 @@ export default function Profile() {
     e.preventDefault()
     setPwMsg('')
     if (newPw.length < 6) return setPwMsg(t('profile.passwordMin'))
-    // verify current password
     const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email, password: curPw })
     if (authErr) { setPwMsg(t('profile.wrongPassword')); return }
     setPwBusy(true)
@@ -67,13 +145,23 @@ export default function Profile() {
 
       <div className="space-y-5">
         <Card className="flex items-center gap-4 p-5">
-          <Avatar name={profile?.full_name} url={profile?.avatar_url} size={56} />
+          <button onClick={pickFile} className="group relative shrink-0" disabled={avatarBusy} title="Change photo">
+            {avatarBusy ? <div className="grid h-14 w-14 place-items-center"><Spinner /></div> : <Avatar name={profile?.full_name} url={profile?.avatar_url} size={56} />}
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-ink/0 transition-colors group-hover:bg-ink/30">
+              <svg className="opacity-0 transition-opacity group-hover:opacity-100" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></svg>
+            </div>
+          </button>
           <div className="min-w-0">
             <p className="truncate font-display text-xl tracking-tight">{profile?.full_name || '—'}</p>
             <p className="truncate text-sm text-muted">{user?.email}</p>
+            {profile?.avatar_url && (
+              <button onClick={removeAvatar} className="mt-0.5 text-xs text-muted hover:text-clay">Remove photo</button>
+            )}
           </div>
+          <input ref={fileRef} type="file" accept="image/webp,image/jpeg,image/png" className="hidden" onChange={onFile} />
           <span className="ml-auto shrink-0 rounded-full bg-canvas px-3 py-1 text-xs font-medium text-muted">{t(ROLE_KEYS[role])}</span>
         </Card>
+        {avatarMsg && <p className="-mt-3 text-xs text-muted">{avatarMsg}</p>}
 
         <Card className="p-5">
           <h2 className="mb-4 text-sm font-medium uppercase tracking-wider text-muted">{t('profile.displayName')}</h2>
@@ -120,6 +208,8 @@ export default function Profile() {
 
         <button onClick={out} className="text-sm text-muted transition-colors hover:text-clay">{t('sign.out')}</button>
       </div>
+
+      <AvatarCropModal open={cropOpen} file={cropFile} onClose={() => setCropOpen(false)} onSaved={onCropSaved} />
     </div>
   )
 }

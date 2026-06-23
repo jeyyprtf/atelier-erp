@@ -272,6 +272,29 @@ exception when duplicate_object then null;
 commit;
 
 -- ============================================================================
+-- AVATAR STORAGE (for profile photo upload)
+-- ============================================================================
+-- Run in SQL Editor to create the public avatars bucket:
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 1048576, '{image/webp,image/jpeg,image/png}')
+on conflict (id) do update set public=true, file_size_limit=1048576, allowed_mime_types='{image/webp,image/jpeg,image/png}';
+
+drop policy if exists avatar_insert on storage.objects;
+create policy avatar_insert on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists avatar_select on storage.objects;
+create policy avatar_select on storage.objects
+  for select to authenticated using (bucket_id = 'avatars');
+
+drop policy if exists avatar_delete on storage.objects;
+create policy avatar_delete on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ============================================================================
 -- OPTIONAL: Promote first user to C-Level
 -- ============================================================================
 -- Run this after the first user signs up:
