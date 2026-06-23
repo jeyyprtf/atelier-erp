@@ -1,0 +1,13 @@
+{
+  "name": "Atelier",
+  "short_name": "Atelier",
+  "description": "A calm, gallery-quiet workspace for your team's tasks, progress, and notes.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafaf7",
+  "theme_color": "#fafaf7",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

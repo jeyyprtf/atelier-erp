@@ -293,6 +293,117 @@ create policy avatar_delete on storage.objects
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- ============================================================================
+-- TASK COMMENTS, NOTIFICATIONS & TIME TRACKING
+-- ============================================================================
+
+create table if not exists public.task_comments (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.tasks(id) on delete cascade,
+  author_id uuid references public.profiles(id) on delete set null,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists task_comments_task_idx on public.task_comments(task_id);
+
+alter table public.task_comments enable row level security;
+drop policy if exists tc_select on public.task_comments;
+create policy tc_select on public.task_comments for select to authenticated using (true);
+drop policy if exists tc_insert on public.task_comments;
+create policy tc_insert on public.task_comments for insert to authenticated with check (author_id = auth.uid());
+drop policy if exists tc_delete on public.task_comments;
+create policy tc_delete on public.task_comments for delete to authenticated using (author_id = auth.uid() or public.my_role() = 'c_level');
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  kind text not null,
+  body text not null,
+  link text,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists notif_profile_idx on public.notifications(profile_id);
+
+alter table public.notifications enable row level security;
+drop policy if exists notif_self on public.notifications;
+create policy notif_self on public.notifications for select to authenticated using (profile_id = auth.uid());
+drop policy if exists notif_mark on public.notifications;
+create policy notif_mark on public.notifications for update to authenticated using (profile_id = auth.uid());
+
+-- triggers for auto-notifications on status change
+create or replace function public.notify_status_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if old.status is distinct from new.status then
+    insert into public.notifications (profile_id, kind, body, link)
+    select uid, 'status_change', format('%s moved "%s" to %s', p.full_name, new.title, new.status), '/team'
+    from (select unnest(array[new.pic_id, (select array_agg(ta.profile_id) from public.task_assignees ta where ta.task_id = new.id)]) as uid) u
+    join public.profiles p on p.id = auth.uid()
+    where u.uid is not null and u.uid <> auth.uid();
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists task_notify on public.tasks;
+create trigger task_notify after update on public.tasks
+  for each row execute function public.notify_status_change();
+
+-- trigger: notify on new comment
+create or replace function public.notify_comment()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  title_ text; uid_ uuid;
+begin
+  select t.title, t.pic_id into title_, uid_ from public.tasks t where t.id = new.task_id;
+  if uid_ is not null and uid_ <> new.author_id then
+    insert into public.notifications (profile_id, kind, body, link)
+    values (uid_, 'comment', format('%s commented on "%s"', (select full_name from public.profiles where id = new.author_id), title_), '/team');
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists comment_notify on public.task_comments;
+create trigger comment_notify after insert on public.task_comments
+  for each row execute function public.notify_comment();
+
+-- trigger: notify on new assignment
+create or replace function public.notify_assignment()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  title_ text;
+begin
+  select t.title into title_ from public.tasks t where t.id = new.task_id;
+  if not exists (select 1 from public.notifications where profile_id = new.profile_id and kind = 'assigned' and created_at > now() - interval '60 seconds' and body like '%' || title_ || '%') then
+    insert into public.notifications (profile_id, kind, body, link)
+    values (new.profile_id, 'assigned', format('You were assigned to "%s"', title_), '/team');
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists assign_notify on public.task_assignees;
+create trigger assign_notify after insert on public.task_assignees
+  for each row execute function public.notify_assignment();
+
+-- time tracking
+create table if not exists public.time_entries (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.tasks(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  minutes int not null check (minutes > 0 and minutes <= 1440),
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists time_entries_task_idx on public.time_entries(task_id);
+
+alter table public.time_entries enable row level security;
+drop policy if exists te_select on public.time_entries;
+create policy te_select on public.time_entries for select to authenticated using (true);
+drop policy if exists te_insert on public.time_entries;
+create policy te_insert on public.time_entries for insert to authenticated with check (profile_id = auth.uid());
+drop policy if exists te_delete on public.time_entries;
+create policy te_delete on public.time_entries for delete to authenticated using (profile_id = auth.uid() or public.my_role() = 'c_level');
+
+-- ============================================================================
 -- OPTIONAL: Promote first user to C-Level
 -- ============================================================================
 -- Run this after the first user signs up:

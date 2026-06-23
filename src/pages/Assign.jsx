@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import { useTasks } from '../lib/useTasks'
 import { useProfiles } from '../lib/useProfiles'
@@ -8,6 +8,23 @@ import TaskModal from '../components/TaskModal'
 import { Button, Spinner, EmptyState, StatusBadge, Avatar } from '../components/ui'
 
 const LABEL = Object.fromEntries(STATUSES.map((s) => [s.key, s.label]))
+
+function exportCSV(tasks, t) {
+  const header = ['Title', 'Status', 'PIC', 'Assignees', 'Deadline', 'Progress']
+  const rows = tasks.map((task) => [
+    task.title,
+    LABEL[task.status] || task.status,
+    task.pic?.full_name || '',
+    (task.assignees || []).map((a) => a.profile?.full_name).join(', '),
+    task.deadline || '',
+    effectiveProgress(task) + '%',
+  ])
+  const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = 'tasks.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function Assign() {
   const { user, role } = useAuth()
@@ -34,7 +51,10 @@ export default function Assign() {
           <h1 className="font-display text-3xl tracking-tight sm:text-4xl">{t('assign.title')}</h1>
           <p className="mt-1 text-sm text-muted">{t('assign.subtitle')}</p>
         </div>
-        <Button onClick={create}>{t('assign.newTask')}</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={create}>{t('assign.newTask')}</Button>
+          {tasks.length > 0 && <Button variant="ghost" onClick={() => exportCSV(tasks, t)}>Export CSV</Button>}
+        </div>
       </header>
 
       {loading ? (

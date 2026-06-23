@@ -9,6 +9,7 @@ const STRINGS = {
     'nav.assignment': 'Assignment',
     'nav.meetingNotes': 'Meeting Notes',
     'nav.resources': 'Resources',
+    'nav.dashboard': 'Dashboard',
     'nav.members': 'Members',
     'nav.profile': 'Profile',
     'sign.out': 'Sign out',
@@ -99,6 +100,18 @@ const STRINGS = {
     'resources.categories.link': 'Link',
     'resources.categories.proposal': 'Proposal',
     'resources.categories.other': 'Other',
+    // dashboard
+    'dashboard.title': 'Good to see you',
+    'dashboard.subtitle': 'Your team at a glance.',
+    'dashboard.myboard': 'My Board',
+    'dashboard.team': 'Team Snapshot',
+    'dashboard.due': 'Due This Week',
+    'dashboard.dueEmpty': 'Nothing due this week. Enjoy the calm.',
+    'dashboard.recent': 'Recent Activity',
+    'dashboard.recentEmpty': 'No recent activity.',
+    'dashboard.empty': 'No tasks yet.',
+    // notifications
+    'notif.unread': '{n} unread',
     // general
     'general.loading': 'Loading…',
     'general.cancel': 'Cancel',
@@ -118,6 +131,7 @@ const STRINGS = {
     'nav.assignment': 'Penugasan',
     'nav.meetingNotes': 'Catatan Rapat',
     'nav.resources': 'Dokumen',
+    'nav.dashboard': 'Dasbor',
     'nav.members': 'Anggota',
     'nav.profile': 'Profil',
     'sign.out': 'Keluar',
@@ -208,6 +222,18 @@ const STRINGS = {
     'resources.categories.link': 'Tautan',
     'resources.categories.proposal': 'Proposal',
     'resources.categories.other': 'Lainnya',
+    // dashboard
+    'dashboard.title': 'Selamat datang',
+    'dashboard.subtitle': 'Tim kamu sekilas.',
+    'dashboard.myboard': 'Papanku',
+    'dashboard.team': 'Cuplikan Tim',
+    'dashboard.due': 'Batas Minggu Ini',
+    'dashboard.dueEmpty': 'Tidak ada yang jatuh tempo minggu ini.',
+    'dashboard.recent': 'Aktivitas Terbaru',
+    'dashboard.recentEmpty': 'Belum ada aktivitas.',
+    'dashboard.empty': 'Belum ada tugas.',
+    // notifications
+    'notif.unread': '{n} belum dibaca',
     // general
     'general.loading': 'Memuat…',
     'general.cancel': 'Batal',

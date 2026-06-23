@@ -3,10 +3,13 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../auth/AuthProvider'
 import { useT } from '../lib/i18n'
+import { useShortcuts } from '../lib/useShortcuts'
+import { NotifBell } from '../lib/notifications'
 import { Avatar, ThemeToggle } from './ui'
 
 const NAV = [
-  { to: '/', labelKey: 'nav.myTasks', end: true },
+  { to: '/', labelKey: 'nav.dashboard', end: true },
+  { to: '/tasks', labelKey: 'nav.myTasks' },
   { to: '/team', labelKey: 'nav.teamProgress' },
   { to: '/assign', labelKey: 'nav.assignment', roles: ['lead', 'c_level'] },
   { to: '/meetings', labelKey: 'nav.meetingNotes' },
@@ -44,12 +47,30 @@ export default function Layout() {
 
   useEffect(() => { setOpen(false) }, [loc.pathname])
 
+  // register service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  }, [])
+
+  // keyboard shortcuts
+  useShortcuts({
+    'd': () => nav('/'),
+    't': () => nav('/tasks'),
+    'e': () => nav('/team'),
+    'a': () => nav('/assign'),
+    'm': () => nav('/meetings'),
+    'r': () => nav('/resources'),
+    'p': () => nav('/profile'),
+  })
+
   async function out() {
     await signOut()
     nav('/login', { replace: true })
   }
 
-  const userBlock = (
+  const sideBottom = (
     <div className="border-t border-hairline pt-4">
       <button onClick={() => nav('/profile')} className="flex w-full items-center gap-3 rounded-xl p-1 text-left transition-colors hover:bg-canvas">
         <Avatar name={profile?.full_name} url={profile?.avatar_url} />
@@ -72,7 +93,9 @@ export default function Layout() {
         <div className="px-2 font-display text-2xl tracking-tight">{t('app.name')}</div>
         <div className="mt-10 flex flex-1 flex-col">
           <NavItems items={items} t={t} />
-          {userBlock}
+          {sideBottom}
+          {/* kb hint */}
+          <p className="mt-2 text-center text-[10px] text-muted/50">⌨ D T E A M R P</p>
         </div>
       </aside>
 
@@ -82,17 +105,19 @@ export default function Layout() {
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M2 5h14M2 9h14M2 13h14" /></svg>
         </button>
         <span className="font-display text-xl tracking-tight">{t('app.name')}</span>
-        <button onClick={() => nav('/profile')} aria-label={t('nav.profile')}>
-          <Avatar name={profile?.full_name} url={profile?.avatar_url} size={30} />
-        </button>
+        <div className="flex items-center gap-2">
+          <NotifBell />
+          <button onClick={() => nav('/profile')} aria-label={t('nav.profile')}>
+            <Avatar name={profile?.full_name} url={profile?.avatar_url} size={30} />
+          </button>
+        </div>
       </header>
 
       {/* mobile drawer */}
       <AnimatePresence>
         {open && (
           <>
-            <motion.div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setOpen(false)}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+            <motion.div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
             <motion.aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-hairline bg-bone px-5 py-7 lg:hidden"
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}>
               <div className="flex items-center justify-between">
@@ -101,9 +126,10 @@ export default function Layout() {
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 3l10 10M13 3L3 13" /></svg>
                 </button>
               </div>
-              <div className="mt-8 flex flex-1 flex-col">
+              <div className="mt-5 flex items-center justify-end"><NotifBell /></div>
+              <div className="mt-4 flex flex-1 flex-col">
                 <NavItems items={items} t={t} onNavigate={() => setOpen(false)} />
-                {userBlock}
+                {sideBottom}
               </div>
             </motion.aside>
           </>
