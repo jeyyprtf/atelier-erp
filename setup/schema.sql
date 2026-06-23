@@ -286,8 +286,6 @@ create policy avatar_insert on storage.objects
   with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
 
 drop policy if exists avatar_select on storage.objects;
-create policy avatar_select on storage.objects
-  for select to authenticated using (bucket_id = 'avatars');
 
 drop policy if exists avatar_delete on storage.objects;
 create policy avatar_delete on storage.objects
