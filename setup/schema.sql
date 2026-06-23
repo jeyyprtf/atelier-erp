@@ -337,7 +337,11 @@ begin
   if old.status is distinct from new.status then
     insert into public.notifications (profile_id, kind, body, link)
     select uid, 'status_change', format('%s moved "%s" to %s', p.full_name, new.title, new.status), '/team'
-    from (select unnest(array[new.pic_id, (select array_agg(ta.profile_id) from public.task_assignees ta where ta.task_id = new.id)]) as uid) u
+    from (
+      select new.pic_id as uid where new.pic_id is not null
+      union
+      select ta.profile_id from public.task_assignees ta where ta.task_id = new.id
+    ) u
     join public.profiles p on p.id = auth.uid()
     where u.uid is not null and u.uid <> auth.uid();
   end if;
