@@ -112,12 +112,14 @@ export function AuthShell({ title, subtitle, children }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden overflow-hidden bg-canvas lg:block">
-        <motion.div className="absolute inset-0 grid place-items-center"
-          initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.9, ease: 'easeOut' }}>
-          <div className="h-64 w-64 rounded-sm border border-hairline bg-bone shadow-sm" />
+        <motion.div className="absolute inset-0 flex items-center justify-center p-16"
+          initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, ease: 'easeOut' }}>
+          <img src="/photo-juan.webp" alt="" className="max-h-full max-w-full rounded-2xl border border-hairline shadow-sm object-contain" />
         </motion.div>
-        <div className="absolute left-10 top-10 font-display text-2xl tracking-tight">Atelier</div>
-        <p className="absolute bottom-10 left-10 max-w-xs text-sm leading-relaxed text-muted">
+        <div className="absolute left-10 top-10">
+          <span className="rounded-full bg-bone/80 px-4 py-2 font-display text-2xl tracking-tight text-ink backdrop-blur-sm">Atelier</span>
+        </div>
+        <p className="absolute bottom-10 left-10 max-w-xs rounded-2xl bg-bone/80 p-4 text-sm leading-relaxed text-ink backdrop-blur-sm">
           A calm, gallery-quiet workspace for your team's tasks, progress, and notes.
         </p>
       </div>
