@@ -1,4 +1,3 @@
-// Minimal service worker — caches the app shell for offline access
 const CACHE = 'atelier-v1'
 const SHELL = ['/', '/manifest.json']
 
@@ -14,6 +13,7 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return
+  if (!e.request.url.startsWith('http')) return   // skip chrome-extension:// etc.
   e.respondWith(
     caches.match(e.request).then((cached) => {
       const fetched = fetch(e.request).then((res) => {

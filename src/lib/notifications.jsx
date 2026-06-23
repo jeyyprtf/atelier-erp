@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from '../auth/AuthProvider'
 import { useNavigate } from 'react-router-dom'
@@ -8,6 +8,7 @@ export function useNotifications() {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [unread, setUnread] = useState(0)
+  const loadRef = useRef(null)
 
   const load = useCallback(async () => {
     if (!user?.id) return
@@ -15,16 +16,17 @@ export function useNotifications() {
     if (data) { setItems(data); setUnread(data.filter((n) => !n.read).length) }
   }, [user?.id])
 
+  useEffect(() => { loadRef.current = load }, [load])
   useEffect(() => { load() }, [load])
 
-  // realtime
+  // realtime (stable ref to avoid re-subscribe loop)
   useEffect(() => {
     if (!user?.id) return
     const ch = supabase.channel('notif-rt')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `profile_id=eq.${user.id}` }, load)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `profile_id=eq.${user.id}` }, () => loadRef.current?.())
       .subscribe()
     return () => { supabase.removeChannel(ch) }
-  }, [user?.id, load])
+  }, [user?.id])
 
   const markRead = async (id) => {
     await supabase.from('notifications').update({ read: true }).eq('id', id)
